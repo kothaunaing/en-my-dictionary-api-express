@@ -1,12 +1,13 @@
 // server.js
 import express from "express";
 import Database from "better-sqlite3"; // Ensure you're importing the correct module
-
+import cors from "cors";
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(cors());
 
 // Connect to your existing database
 const db = new Database("dictionary.db", { verbose: console.log });
