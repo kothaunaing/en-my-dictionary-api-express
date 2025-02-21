@@ -11,6 +11,10 @@ app.use(express.json());
 // Connect to your existing database
 const db = new Database("dictionary.db", { verbose: console.log });
 
+app.get("/", (req, res) => {
+  res.send({ msg: "API is running well." });
+});
+
 // GET: Retrieve a Specific Word by ID
 app.get("/word/:query", (req, res) => {
   try {
