@@ -16,7 +16,6 @@ app.get("/", (req, res) => {
   res.send({ msg: "API is running well." });
 });
 
-// GET: Retrieve a Specific Word by ID
 app.get("/word/:query", (req, res) => {
   try {
     const query = req.params.query;
