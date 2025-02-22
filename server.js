@@ -12,6 +12,7 @@ app.use(cors());
 // Connect to your existing database
 const enmmDB = new Database("database/dictionary.db");
 const mmDB = new Database("database/mm_mm.db");
+const mmenDB = new Database("database/mm_en.db");
 
 app.get("/", (req, res) => {
   res.send({ msg: "API is running well." });
@@ -21,9 +22,17 @@ app.get("/api/word/:query", (req, res) => {
   try {
     const query = req.params.query;
     const stmt = enmmDB.prepare("SELECT * FROM dictionary WHERE word = ?");
-    const words = stmt.all(query);
-    if (words.length > 0) {
-      res.json(words);
+    const stmt2 = mmenDB.prepare(
+      "SELECT * from ml_dictionary_words WHERE word = ?"
+    );
+
+    const mmenWords = stmt2.all(query);
+    const enmmWords = stmt.all(query);
+
+    if (mmenWords.length > 0) {
+      res.json({ type: "mm-en", results: mmenWords });
+    } else if (enmmWords.length > 0) {
+      res.json({ type: "en-mm", results: enmmWords });
     } else {
       res.status(404).json({ error: "Word not found" });
     }
@@ -56,8 +65,31 @@ app.get("/api/word-recommend/:query", (req, res) => {
       ? [exactWord, ...recommendedWords]
       : recommendedWords;
 
+    // First, fetch the exact word if it exists
+    const mmenExactStmt = mmenDB.prepare(
+      "SELECT id, word FROM ml_dictionary_words WHERE word = ? LIMIT 1"
+    );
+    const mmenExactWord = mmenExactStmt.get(query);
+
+    // Then, fetch words that start with the query but exclude the exact match
+    const mmenRecommendStmt = mmenDB.prepare(
+      "SELECT id, word FROM ml_dictionary_words WHERE word LIKE ? AND word != ? LIMIT ?"
+    );
+    const mmenRecommendedWords = mmenRecommendStmt.all(
+      query + "%",
+      query,
+      limit
+    );
+
+    // Combine results: exact word first, then recommendations
+    const mmenResults = mmenExactWord
+      ? [mmenExactWord, ...mmenRecommendedWords]
+      : mmenRecommendedWords;
+
     if (results.length > 0) {
-      res.json(results);
+      res.json({ type: "en-mm", results });
+    } else if (mmenResults.length > 0) {
+      res.json({ type: "mm-en", results: mmenResults });
     } else {
       res.status(404).json({ error: "No recommendations found" });
     }
