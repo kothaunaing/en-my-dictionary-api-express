@@ -21,13 +21,15 @@ app.get("/", (req, res) => {
 app.get("/api/word/:query", (req, res) => {
   try {
     const query = req.params.query;
-    const stmt = enmmDB.prepare("SELECT * FROM dictionary WHERE word = ?");
+    const stmt = enmmDB.prepare(
+      "SELECT * FROM dictionary WHERE LOWER(word) = ?"
+    );
     const stmt2 = mmenDB.prepare(
-      "SELECT * from ml_dictionary_words WHERE word = ?"
+      "SELECT * from ml_dictionary_words WHERE LOWER(word) = ?"
     );
 
-    const mmenWords = stmt2.all(query);
-    const enmmWords = stmt.all(query);
+    const mmenWords = stmt2.all(query.toLocaleLowerCase());
+    const enmmWords = stmt.all(query.toLocaleLowerCase());
 
     if (mmenWords.length > 0) {
       res.json({ type: "mm-en", results: mmenWords });
